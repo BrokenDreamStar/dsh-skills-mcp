@@ -2,7 +2,7 @@
 
 **在 DSH Web 设置页和模型工具里，统一管理系统级 / 项目级的 Skills 与 MCP 服务器。**
 
-[![DSH](https://img.shields.io/badge/DSH-0.2.1--rc.2%20~%200.2.x-4c6ef5)](#兼容性)
+![DSH](https://img.shields.io/badge/DSH-0.2.1--rc.2%20~%200.2.x-4c6ef5)
 [![Node.js](https://img.shields.io/badge/Node.js-%E2%89%A522.19-339933?logo=node.js&logoColor=white)](#安装)
 [![tests](https://img.shields.io/badge/tests-43%20passed-2ea043)](#开发)
 [![license](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
@@ -12,24 +12,9 @@
 [![npm downloads](https://img.shields.io/npm/dm/dsh-skills-mcp?color=cb3837&label=downloads)](https://www.npmjs.com/package/dsh-skills-mcp)
 -->
 
-一个 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness)（`dsh`）插件：在 **Settings → Skills 与 MCP** 里用一个页面完成技能与 MCP 服务器的日常维护，同时给模型两个对应工具 `skills_manager` / `mcp_manager`。
-
-> 这是社区维护的第三方插件，不是 DeepSeek 官方产品。
-
-**目录**：[设计取舍](#设计取舍) · [功能](#功能) · [安装](#安装) · [快速开始](#快速开始) · [Skills](#skills) · [MCP](#mcp) · [模型工具](#模型工具) · [架构](#架构) · [数据位置](#数据位置) · [安全边界](#安全边界) · [已知限制](#已知限制) · [兼容性](#兼容性) · [开发](#开发) · [License](#license)
+一个 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness)插件：在 **Settings → Skills 与 MCP** 里对Skills和MCP进行统一管理，同时给模型两个对应工具 `skills_manager` / `mcp_manager`。
 
 ---
-
-## 设计取舍
-
-四个刻意的设计决定，决定了这个插件的行为边界：
-
-- **停用技能不碰源文件**：为活动 Agent 注册同名 runtime 遮蔽技能，而不是改写 `SKILL.md` 的 frontmatter。源目录、frontmatter 与其他 Agent（Claude Code、Codex 等）都不受影响。
-- **MCP 独立存 `mcp.json`**：不写进 profile 的 `cordis.patch.yml`，运行时通过官方 `@deepseek-ai/dsh-mcp-client` 挂载，单个服务器出错不会污染宿主组合树。
-- **项目级配置按会话隔离**：项目级 MCP 挂在 `agent.ctx` 里，只对项目根匹配的会话可见，不会串到别的项目。
-- **同时管理两套技能根**：`~/.dsh` 与 `~/.agents` 都会扫描和管理；Claude Code 的 MCP 只读发现，可一键导入。
-
-最后一条最省事：你在 Claude Code 里配好的 MCP，装完这个插件就能在 DSH 里直接用，不用抄一遍配置。
 
 ## 功能
 
@@ -277,41 +262,6 @@ ManagerService ── SkillsStore ──> ~/.dsh/skills | ~/.agents/skills | <pr
 | `$DSH_HOME/mcp-external.json`                       | 显式停用的外部 MCP id（不含密钥） |
 | `$DSH_HOME/.skills-mcp-trash/`                      | 删除技能的回收站                  |
 | `mcp.json.bak`                                      | 每次写入前自动备份                |
-
-## 安全边界
-
-- **Web 只由 DSH owner 浏览器访问**：路由注册在 `ctx.connection.fetch` 中，复用 DSH 的 Host / Origin 与 cookie 鉴权；不额外开放端口。
-- **模型工具的 MCP 列表会脱敏**：env / header 只返回键名和 `[redacted]`；URL 去除 query 与 userinfo；错误文本会打码 Bearer token。
-- **Web 表单是 owner 视图**：为了编辑，页面会显示已配置的 env / header 值。不要把设置页分享给不可信的人。
-- **Skills 写入范围受控**：服务端校验 kebab-case 名称与 root containment，拒绝符号链接目标；删除只移动到自己 DSH home 下的回收站。**DSH 停用**只写 `skills-mcp-state.json`，不碰源文件。
-- **MCP 删除是直接改 `mcp.json`**（没有回收站）；但写入前保留 `.bak`。
-- **外部 MCP 状态文件不含密钥**：`mcp-external.json` 只记录已启用的外部 id；外部配置仍由 Claude Code 文件持有。启用外部服务器意味着在 DSH 宿主进程中执行其命令/连接其 URL。
-- **模型工具与 Web 写操作走不同的授权路径**：Web 设置页依赖 DSH 登录会话（owner）；模型工具写操作另经 sandbox / approval 升级到 `danger-full-access` 或逐次审批。
-
-## 已知限制
-
-- 没有 skill 市场、GitHub 安装、更新检查；没有把已有技能“同步”到其他目录。
-- 只发现 DSH 原生 roots 与 Shared Agents（`.dsh` / `.agents`），不扫描 Claude Code / Codex 等其他 Agent 的**技能**目录（MCP 例外，见上文）。
-- 同名技能在两个根目录下会同时列出，但一次编辑只作用于所选根。
-- 符号链接技能可以浏览，但为避免越过根目录，管理页不允许编辑或删除它们。
-- 项目级 MCP 每会话独立连接；服务器很多或启动慢时会拖慢会话创建（加载在首个提示词前完成）。
-- 外部 MCP 默认自动启用：Claude Code 里新增的服务器会在下次重载 / 新建会话时自动连接 DSH；不需要的条目请在管理页“在 DSH 禁用”。
-- 外部修改 `mcp.json` / `.claude.json` 不会自动被监听；Web 保存会主动重载，手改后需重载或新建会话。
-- Claude Code 的**插件缓存** `.mcp.json`（例如 `~/.claude/plugins/cache/...`）不在发现范围；只读取 `~/.claude.json` 与项目 `.mcp.json`。
-- MCP 连接健康、退出码、stderr 尾部和 OAuth 需要官方 client 提供 seam；当前只展示加载结果与工具数。
-- Skills 写入后能否被模型看到取决于宿主是否启用了 filesystem skill provider；本插件只负责文件与 DSH-only 遮蔽，不做第二套技能注册。
-- DSH 技能停用按“技能名”生效；停用后同名副本（不同根目录）在 DSH 中一起隐藏，需要分别在源文件中管理副本。
-
-## 兼容性
-
-| 项         | 要求                                                                                                                                       |
-| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| DSH        | `>=0.2.1-rc.2 <0.3.0`（见 [package.json](./package.json) 的 `engines.dsh`）                                                                |
-| Node.js    | `>=22.19.0`                                                                                                                                |
-| peer       | `@deepseek-ai/cordis`、`dsh-agent`、`dsh-mcp-client`、`dsh-sandbox`、`dsh-tools`、`schemastery`（均为 optional peer，由宿主 profile 提供） |
-| WebUI 平台 | 需要 0.2.1-rc.2；TUI / headless 只用模型工具时不需要设置页                                                                                 |
-
-版本门禁由 DSH 自己的 `evaluatePluginCompatibility()` 执行：宿主版本不在范围内时 bundle 会被优雅跳过，而不是启动失败。
 
 ## 开发
 
