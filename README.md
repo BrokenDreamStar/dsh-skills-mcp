@@ -61,7 +61,7 @@ dsh plugin --profile web add link:/path/to/dsh-skills-mcp
 仓库已提交构建产物（`dist/`），因此 Git 源安装**不需要**在本地跑构建脚本，不会触发 `git-hosted plugins build on install` 的拦截。
 
 ```bash
-dsh plugin --profile web add github:<你的账号>/dsh-skills-mcp
+dsh plugin --profile web add github:BrokenDreamStar/dsh-skills-mcp
 ```
 
 ### 验证安装
