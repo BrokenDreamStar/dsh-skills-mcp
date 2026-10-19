@@ -16,32 +16,30 @@
 
 > 这是社区维护的第三方插件，不是 DeepSeek 官方产品。
 
-**目录**：[差异点](#跟同类插件比它做对了什么) · [功能](#功能) · [安装](#安装) · [快速开始](#快速开始) · [Skills](#skills) · [MCP](#mcp) · [模型工具](#模型工具) · [架构](#架构) · [数据位置](#数据位置) · [安全边界](#安全边界) · [已知限制](#已知限制) · [兼容性](#兼容性) · [开发](#开发) · [License](#license)
+**目录**：[设计取舍](#设计取舍) · [功能](#功能) · [安装](#安装) · [快速开始](#快速开始) · [Skills](#skills) · [MCP](#mcp) · [模型工具](#模型工具) · [架构](#架构) · [数据位置](#数据位置) · [安全边界](#安全边界) · [已知限制](#已知限制) · [兼容性](#兼容性) · [开发](#开发) · [License](#license)
 
 ---
 
-## 跟同类插件比，它做对了什么
+## 设计取舍
 
-DSH 生态里「技能 + MCP 管理器」已经有好几个。这个插件在四个地方做了不同的取舍：
+四个刻意的设计决定，决定了这个插件的行为边界：
 
-| 常见做法 | 本插件的做法 |
-|---|---|
-| 停用技能 = 改写 `SKILL.md` 的 frontmatter | **不碰源文件**：为活动 Agent 注册同名 runtime 遮蔽技能，Claude Code / Codex 那边完全不受影响 |
-| MCP 服务器写进 profile 的 `cordis.patch.yml` | 独立存 `mcp.json`，运行时通过官方 `@deepseek-ai/dsh-mcp-client` 挂载，MCP 崩溃不会污染组合树 |
-| 项目级配置对所有会话可见 | 项目级 MCP 挂在 `agent.ctx` 里，**只对项目根匹配的会话可见**，不会串到别的项目 |
-| 只管 DSH 一家目录 | 同时管理 `~/.dsh` 与 `~/.agents` 两套原生根，并只读发现 Claude Code 的 MCP，可一键导入 |
+- **停用技能不碰源文件**：为活动 Agent 注册同名 runtime 遮蔽技能，而不是改写 `SKILL.md` 的 frontmatter。源目录、frontmatter 与其他 Agent（Claude Code、Codex 等）都不受影响。
+- **MCP 独立存 `mcp.json`**：不写进 profile 的 `cordis.patch.yml`，运行时通过官方 `@deepseek-ai/dsh-mcp-client` 挂载，单个服务器出错不会污染宿主组合树。
+- **项目级配置按会话隔离**：项目级 MCP 挂在 `agent.ctx` 里，只对项目根匹配的会话可见，不会串到别的项目。
+- **同时管理两套技能根**：`~/.dsh` 与 `~/.agents` 都会扫描和管理；Claude Code 的 MCP 只读发现，可一键导入。
 
-最后一条尤其省事：你在 Claude Code 里配好的 MCP，装完这个插件就能在 DSH 里直接用，不用抄一遍配置。
+最后一条最省事：你在 Claude Code 里配好的 MCP，装完这个插件就能在 DSH 里直接用，不用抄一遍配置。
 
 ## 功能
 
-| 能力 | 系统级 | 项目级 |
-|---|---|---|
-| Skills 目录 | `$DSH_HOME/skills` + `$AGENTS_HOME/skills`（默认 `~/.dsh/skills`、`~/.agents/skills`） | `<project>/.dsh/skills` + `<project>/.agents/skills` |
-| MCP 配置文件 | `$DSH_HOME/mcp.json` + 外部 `~/.claude.json` | `<project>/.dsh/mcp.json` + 外部 Claude 项目配置 / `.mcp.json` |
-| 作用范围 | 所有会话 | 仅项目根匹配的会话 |
-| 加载方式 | 插件全局挂载 | 每个 Agent 的 Cordis scope 内挂载 |
-| 生效方式 | 保存后立即重载 | 保存后重载活动会话；新会话创建前加载 |
+| 能力         | 系统级                                                                                 | 项目级                                                         |
+| ------------ | -------------------------------------------------------------------------------------- | -------------------------------------------------------------- |
+| Skills 目录  | `$DSH_HOME/skills` + `$AGENTS_HOME/skills`（默认 `~/.dsh/skills`、`~/.agents/skills`） | `<project>/.dsh/skills` + `<project>/.agents/skills`           |
+| MCP 配置文件 | `$DSH_HOME/mcp.json` + 外部 `~/.claude.json`                                           | `<project>/.dsh/mcp.json` + 外部 Claude 项目配置 / `.mcp.json` |
+| 作用范围     | 所有会话                                                                               | 仅项目根匹配的会话                                             |
+| 加载方式     | 插件全局挂载                                                                           | 每个 Agent 的 Cordis scope 内挂载                              |
+| 生效方式     | 保存后立即重载                                                                         | 保存后重载活动会话；新会话创建前加载                           |
 
 **Skills**
 
@@ -119,9 +117,9 @@ dsh --profile web --dump-config | grep -A3 'id: dsh-skills-mcp'
 
 扫描的根目录（DSH 原生 provider 的同一组）：
 
-| 来源 | 系统级 | 项目级 |
-|---|---|---|
-| DSH | `$DSH_HOME/skills` | `<project>/.dsh/skills` |
+| 来源          | 系统级                | 项目级                     |
+| ------------- | --------------------- | -------------------------- |
+| DSH           | `$DSH_HOME/skills`    | `<project>/.dsh/skills`    |
 | Shared Agents | `$AGENTS_HOME/skills` | `<project>/.agents/skills` |
 
 `$AGENTS_HOME` 默认为 `~/.agents`，可用环境变量覆盖。DSH 根的 `.system` 子目录不会纳入管理；指向根目录外的符号链接技能会列出并显示为**只读**，编辑和删除会被拒绝。
@@ -134,6 +132,7 @@ name: my-skill
 description: 这个技能做什么、何时使用。
 whenToUse: 可选，补充触发场景。
 ---
+
 # My Skill
 
 正文……
@@ -142,8 +141,8 @@ whenToUse: 可选，补充触发场景。
 可选的调用控制与 DSH 一致：
 
 ```yaml
-disable-model-invocation: true   # 模型不可调用
-user-invocable: false            # 用户不能用 /name 调用
+disable-model-invocation: true # 模型不可调用
+user-invocable: false # 用户不能用 /name 调用
 ```
 
 管理页会校验 frontmatter 并拒绝保存无效文件；已损坏的文件仍会列出来并标记问题，便于修复。
@@ -167,27 +166,27 @@ user-invocable: false            # 用户不能用 /name 调用
 
 ```json
 {
-  "mcpServers": {
-    "filesystem": {
-      "transport": "stdio",
-      "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-filesystem", "/path"],
-      "env": { "TOKEN": "..." },
-      "cwd": "/optional/cwd",
-      "toolCallTimeoutMs": 60000
-    },
-    "remote": {
-      "transport": "streamable-http",
-      "url": "https://example.com/mcp",
-      "headers": { "Authorization": "Bearer ..." }
-    },
-    "disabled-server": {
-      "transport": "stdio",
-      "command": "node",
-      "args": ["server.js"],
-      "disabled": true
-    }
-  }
+	"mcpServers": {
+		"filesystem": {
+			"transport": "stdio",
+			"command": "npx",
+			"args": ["-y", "@modelcontextprotocol/server-filesystem", "/path"],
+			"env": { "TOKEN": "..." },
+			"cwd": "/optional/cwd",
+			"toolCallTimeoutMs": 60000
+		},
+		"remote": {
+			"transport": "streamable-http",
+			"url": "https://example.com/mcp",
+			"headers": { "Authorization": "Bearer ..." }
+		},
+		"disabled-server": {
+			"transport": "stdio",
+			"command": "node",
+			"args": ["server.js"],
+			"disabled": true
+		}
+	}
 }
 ```
 
@@ -252,32 +251,32 @@ ManagerService ── SkillsStore ──> ~/.dsh/skills | ~/.agents/skills | <pr
             └─ 项目级：agent/created → agent.ctx.plugin(...)
 ```
 
-| 文件 | 作用 |
-|---|---|
-| `src/index.ts` | 插件入口：注册工具、API、生命周期 |
-| `src/service.ts` | 组合层，快照与跨 host/tool 的操作 |
-| `src/skills.ts` | Skills 扫描、frontmatter 校验、CRUD、回收站 |
-| `src/skill-state.ts` | DSH-only 技能启停状态（按系统 / 项目根存储） |
-| `src/skill-runtime.ts` | 在 Agent 作用域注册 runtime 遮蔽技能 |
-| `src/mcp-config.ts` | `mcp.json` 读取 / 校验 / 原子写入，官方 client 配置映射 |
-| `src/external-mcp.ts` | Claude Code MCP 只读发现与 DSH 启用 overlay |
-| `src/mcp-runtime.ts` | 系统级、外部来源与 per-Agent 项目级动态挂载、状态、重载 |
-| `src/api.ts` | 认证的 Fetch 路由 |
-| `src/tools.ts` | `skills_manager` / `mcp_manager` |
-| `src/client/` | Web 设置页（中英双语、无额外 UI 依赖） |
+| 文件                   | 作用                                                    |
+| ---------------------- | ------------------------------------------------------- |
+| `src/index.ts`         | 插件入口：注册工具、API、生命周期                       |
+| `src/service.ts`       | 组合层，快照与跨 host/tool 的操作                       |
+| `src/skills.ts`        | Skills 扫描、frontmatter 校验、CRUD、回收站             |
+| `src/skill-state.ts`   | DSH-only 技能启停状态（按系统 / 项目根存储）            |
+| `src/skill-runtime.ts` | 在 Agent 作用域注册 runtime 遮蔽技能                    |
+| `src/mcp-config.ts`    | `mcp.json` 读取 / 校验 / 原子写入，官方 client 配置映射 |
+| `src/external-mcp.ts`  | Claude Code MCP 只读发现与 DSH 启用 overlay             |
+| `src/mcp-runtime.ts`   | 系统级、外部来源与 per-Agent 项目级动态挂载、状态、重载 |
+| `src/api.ts`           | 认证的 Fetch 路由                                       |
+| `src/tools.ts`         | `skills_manager` / `mcp_manager`                        |
+| `src/client/`          | Web 设置页（中英双语、无额外 UI 依赖）                  |
 
 ## 数据位置
 
-| 路径 | 内容 |
-|---|---|
-| `$DSH_HOME/skills`、`$AGENTS_HOME/skills` | 系统级技能源文件 |
-| `<project>/.dsh/skills`、`<project>/.agents/skills` | 项目级技能源文件 |
-| `$DSH_HOME/mcp.json` | 系统级 MCP 配置 |
-| `<project>/.dsh/mcp.json` | 项目级 MCP 配置 |
-| `$DSH_HOME/skills-mcp-state.json` | DSH-only 技能停用状态 |
-| `$DSH_HOME/mcp-external.json` | 显式停用的外部 MCP id（不含密钥） |
-| `$DSH_HOME/.skills-mcp-trash/` | 删除技能的回收站 |
-| `mcp.json.bak` | 每次写入前自动备份 |
+| 路径                                                | 内容                              |
+| --------------------------------------------------- | --------------------------------- |
+| `$DSH_HOME/skills`、`$AGENTS_HOME/skills`           | 系统级技能源文件                  |
+| `<project>/.dsh/skills`、`<project>/.agents/skills` | 项目级技能源文件                  |
+| `$DSH_HOME/mcp.json`                                | 系统级 MCP 配置                   |
+| `<project>/.dsh/mcp.json`                           | 项目级 MCP 配置                   |
+| `$DSH_HOME/skills-mcp-state.json`                   | DSH-only 技能停用状态             |
+| `$DSH_HOME/mcp-external.json`                       | 显式停用的外部 MCP id（不含密钥） |
+| `$DSH_HOME/.skills-mcp-trash/`                      | 删除技能的回收站                  |
+| `mcp.json.bak`                                      | 每次写入前自动备份                |
 
 ## 安全边界
 
@@ -305,12 +304,12 @@ ManagerService ── SkillsStore ──> ~/.dsh/skills | ~/.agents/skills | <pr
 
 ## 兼容性
 
-| 项 | 要求 |
-|---|---|
-| DSH | `>=0.2.1-rc.2 <0.3.0`（见 [package.json](./package.json) 的 `engines.dsh`） |
-| Node.js | `>=22.19.0` |
-| peer | `@deepseek-ai/cordis`、`dsh-agent`、`dsh-mcp-client`、`dsh-sandbox`、`dsh-tools`、`schemastery`（均为 optional peer，由宿主 profile 提供） |
-| WebUI 平台 | 需要 0.2.1-rc.2；TUI / headless 只用模型工具时不需要设置页 |
+| 项         | 要求                                                                                                                                       |
+| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| DSH        | `>=0.2.1-rc.2 <0.3.0`（见 [package.json](./package.json) 的 `engines.dsh`）                                                                |
+| Node.js    | `>=22.19.0`                                                                                                                                |
+| peer       | `@deepseek-ai/cordis`、`dsh-agent`、`dsh-mcp-client`、`dsh-sandbox`、`dsh-tools`、`schemastery`（均为 optional peer，由宿主 profile 提供） |
+| WebUI 平台 | 需要 0.2.1-rc.2；TUI / headless 只用模型工具时不需要设置页                                                                                 |
 
 版本门禁由 DSH 自己的 `evaluatePluginCompatibility()` 执行：宿主版本不在范围内时 bundle 会被优雅跳过，而不是启动失败。
 
@@ -328,11 +327,6 @@ npm run dev:client               # client 侧 watch
 本地挂载后用 `dsh --profile web --dump-config` 检查组合；改客户端代码后 `npm run build` 并刷新页面，改宿主代码需要重启 dsh。
 
 `dist/` 已提交进仓库，是为了让 Git 源安装可以跳过构建脚本。修改源码后请重新 `npm run build` 再提交。
-
-## 链接
-
-- 插件包名：`dsh-skills-mcp`
-- 问题反馈：欢迎开 issue
 
 ## License
 
