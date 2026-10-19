@@ -7,11 +7,6 @@
 [![tests](https://img.shields.io/badge/tests-43%20passed-2ea043)](#开发)
 [![license](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-<!-- 发布到 npm 后启用这两枚徽章：
-[![npm version](https://img.shields.io/npm/v/dsh-skills-mcp?color=cb3837&logo=npm&label=npm)](https://www.npmjs.com/package/dsh-skills-mcp)
-[![npm downloads](https://img.shields.io/npm/dm/dsh-skills-mcp?color=cb3837&label=downloads)](https://www.npmjs.com/package/dsh-skills-mcp)
--->
-
 一个 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness)插件：在 **Settings → Skills 与 MCP** 里对Skills和MCP进行统一管理，同时给模型两个对应工具 `skills_manager` / `mcp_manager`。
 
 ---
@@ -67,12 +62,6 @@ dsh plugin --profile web add link:/path/to/dsh-skills-mcp
 
 ```bash
 dsh plugin --profile web add github:<你的账号>/dsh-skills-mcp
-```
-
-### 方式三：npm（发布后可用）
-
-```bash
-dsh plugin --profile web add dsh-skills-mcp
 ```
 
 ### 验证安装
