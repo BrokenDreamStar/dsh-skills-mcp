@@ -1,0 +1,108 @@
+{
+  "name": "dsh-skills-mcp",
+  "version": "0.4.1",
+  "description": "DeepSeek Harness 插件：在 WebUI 与模型工具中统一管理系统级 / 项目级 Skills 与 MCP 服务器",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./client": "./dist/client.js",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "cordis.patch.yml",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json && tsc -p tsconfig.client.json && node scripts/build-client.mjs",
+    "dev": "tsc -p tsconfig.json --watch",
+    "dev:client": "node scripts/build-client.mjs --watch",
+    "test": "vitest run",
+    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.client.json",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "deepseek-harness",
+    "dsh",
+    "dsh-plugin",
+    "skills",
+    "mcp",
+    "skill-manager",
+    "mcp-manager"
+  ],
+  "license": "MIT",
+  "engines": {
+    "node": ">=22.19.0",
+    "dsh": ">=0.2.1-rc.2 <0.3.0"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "inject": [
+        "@deepseek-ai/dsh-client-locale",
+        "@deepseek-ai/dsh-client-ui-settings"
+      ]
+    }
+  },
+  "dependencies": {
+    "yaml": "^2.8.1"
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": ">=4.0.5",
+    "@deepseek-ai/dsh-agent": ">=0.2.1-rc.2",
+    "@deepseek-ai/dsh-mcp-client": ">=0.2.1-rc.2 <0.3.0",
+    "@deepseek-ai/dsh-sandbox": ">=0.2.1-rc.2",
+    "@deepseek-ai/dsh-tools": ">=0.2.1-rc.2",
+    "@deepseek-ai/schemastery": ">=3.18.5"
+  },
+  "peerDependenciesMeta": {
+    "@deepseek-ai/cordis": {
+      "optional": true
+    },
+    "@deepseek-ai/dsh-agent": {
+      "optional": true
+    },
+    "@deepseek-ai/dsh-mcp-client": {
+      "optional": true
+    },
+    "@deepseek-ai/dsh-sandbox": {
+      "optional": true
+    },
+    "@deepseek-ai/dsh-tools": {
+      "optional": true
+    },
+    "@deepseek-ai/schemastery": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@deepseek-ai/cordis": "4.0.5",
+    "@deepseek-ai/dsh-agent": "0.2.1-rc.2",
+    "@deepseek-ai/dsh-attachment": "^0.2.1-rc.2",
+    "@deepseek-ai/dsh-http-proxy": "^0.2.1-rc.2",
+    "@deepseek-ai/dsh-llm": "^0.2.1-rc.2",
+    "@deepseek-ai/dsh-mcp-client": "0.2.1-rc.2",
+    "@deepseek-ai/dsh-mcp-resources": "^0.2.1-rc.2",
+    "@deepseek-ai/dsh-sandbox": "^0.2.1-rc.2",
+    "@deepseek-ai/dsh-scope": "^0.2.1-rc.2",
+    "@deepseek-ai/dsh-subprocess": "^0.2.1-rc.2",
+    "@deepseek-ai/dsh-system-prompt": "^0.2.1-rc.2",
+    "@deepseek-ai/dsh-timeout": "^0.2.1-rc.2",
+    "@deepseek-ai/dsh-tools": "0.2.1-rc.2",
+    "@deepseek-ai/schemastery": "3.18.5",
+    "@types/node": "^24.0.0",
+    "@types/react": "~18.3.1",
+    "esbuild": "^0.25.0",
+    "typescript": "^5.9.0",
+    "vitest": "^4.1.8"
+  }
+}

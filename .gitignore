@@ -1,0 +1,7 @@
+node_modules/
+.npm-cache/
+*.tgz
+.DS_Store
+
+# dist/ 故意不忽略：DSH 默认禁止 git 源依赖执行 prepare 构建脚本，
+# 构建产物必须随仓库提交，`dsh plugin add github:...` 才能开箱即用。

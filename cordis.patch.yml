@@ -1,0 +1,13 @@
+# dsh-skills-mcp 的 bundle 层：只插入插件行。
+# MCP 服务器不在这里配置；它们保存在：
+#   系统级：$DSH_HOME/mcp.json
+#   项目级：<project>/.dsh/mcp.json
+# 由插件在运行时挂载官方 @deepseek-ai/dsh-mcp-client。
+- insert:
+    - id: dsh-skills-mcp
+      name: 'dsh-skills-mcp'
+      config:
+        # 留空使用 $DSH_HOME 或 ~/.dsh。
+        dshHome: !!js process.env.DSH_SKILLS_MCP_HOME ?? ''
+        # 留空使用 $DSH_AGENTS_HOME 或 ~/.agents。
+        agentsHome: !!js process.env.DSH_AGENTS_HOME ?? ''
