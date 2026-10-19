@@ -70,16 +70,6 @@ dsh plugin --profile web add github:<你的账号>/dsh-skills-mcp
 dsh --profile web --dump-config | grep -A3 'id: dsh-skills-mcp'
 ```
 
-确认 bundle 行已进入组合树后，**重启 dsh 并刷新 WebUI**，在 **设置 → Skills 与 MCP** 打开管理页。
-
-> WebUI 平台要求 dsh 0.2.1-rc.2。只在 TUI / headless 下使用 `skills_manager` / `mcp_manager` 时不需要设置页。
-
-## 快速开始
-
-1. **看看现在有什么** —— 打开设置页，Skills 页签会列出 `~/.dsh/skills`、`~/.agents/skills` 以及当前项目的 `.dsh` / `.agents` 下的全部技能；MCP 页签会列出已配置的服务器和从 Claude Code 发现的外部服务器。
-2. **加一个 MCP 服务器** —— 切到 MCP 页签 →「新建」，填 `stdio` 的 command/args 或 `streamable-http` 的 url/headers → 保存即生效。已有的 Claude Code 服务器如果已经在列表里，什么都不用做，它们默认已启用。
-3. **临时关掉一个技能** —— 在技能卡上点「在 DSH 停用」。源文件不变，Claude Code 里照常可用；想恢复点「启用」。
-
 ## Skills
 
 ### 文件格式
